@@ -44,9 +44,13 @@ function navQueryFor(place){
 function privateNavForm(place){
   if(!place.privateNavKey)return "";
   const saved=navQueryFor(place);
+  const isStay=place.privateNavKey==="otaru-airbnb";
+  const instructions=isStay
+    ? `從${sourceLink(place.privateSource,"原 Notion 住宿頁")}複製地址或座標，設定一次後只儲存在這台裝置的瀏覽器。`
+    : "從租車確認單複製實際營業所地址或座標；取車與還車地點可能不同。設定只儲存在這台裝置的瀏覽器。";
   return `<form class="private-nav-form" data-private-form="${esc(place.privateNavKey)}">
-    <label for="private-${esc(place.privateNavKey)}">小樽住宿導航位置</label>
-    <p>從${sourceLink(place.privateSource,"原 Notion 住宿頁")}複製地址或座標，設定一次後只儲存在這台裝置的瀏覽器。</p>
+    <label for="private-${esc(place.privateNavKey)}">${isStay?"小樽住宿":"租車營業所"}導航位置</label>
+    <p>${instructions}</p>
     <div><input id="private-${esc(place.privateNavKey)}" name="destination" type="text" value="${esc(saved)}" placeholder="貼上地址或經緯度" autocomplete="off" required>
     <button class="button button-primary" type="submit">儲存導航</button></div>
   </form>`;
@@ -98,7 +102,7 @@ function renderStop(place,index){
   const query=navQueryFor(place);
   const nav=query
     ? `<a class="text-button primary-link" href="${esc(navigationUrl(query))}" target="_blank" rel="noopener noreferrer">開始導航 ↗</a>`
-    : place.privateNavKey?`<button type="button" class="text-button primary-link" data-detail="${esc(place.id)}">設定住宿導航 →</button>`
+    : place.privateNavKey?`<button type="button" class="text-button primary-link" data-detail="${esc(place.id)}">設定目的地 →</button>`
     : `<span class="text-button" aria-label="此項目尚無可確認的導航地點">地點待確認</span>`;
   const note=place.note?`<p class="stop-note">${esc(place.note)}</p>`:"";
   return `<article class="stop ${done?"done":""}" id="stop-${esc(place.id)}">
@@ -271,7 +275,7 @@ function onSubmit(e){
     const p=state.data.places.find(x=>x.privateNavKey===form.dataset.privateForm);
     $("#place-dialog").close();if(p)openDetail(p.id);
   }
-  toast("住宿導航已儲存在這台裝置");
+  toast("導航位置已儲存在這台裝置");
 }
 function onClick(e){
   const nav=e.target.closest("[data-view]");if(nav){selectView(nav.dataset.view);return;}
