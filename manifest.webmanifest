@@ -1,0 +1,19 @@
+{
+  "name": "北海道・秋の七日間",
+  "short_name": "北海道指南",
+  "description": "Jacky 的 2026 北海道七日旅遊指南",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f5ee",
+  "theme_color": "#183c38",
+  "lang": "zh-Hant",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

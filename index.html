@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#183c38">
+  <meta name="description" content="2026 北海道七日旅遊指南：每日行程、景點解說與一鍵 Google Maps 導航。">
+  <title>北海道・秋の七日間｜Jacky 的旅行指南</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳至主要內容</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#top" aria-label="北海道旅遊指南首頁">
+        <span class="brand-mark">北</span>
+        <span><strong>HOKKAIDO</strong><small>2026 · 秋の七日間</small></span>
+      </a>
+      <nav class="main-nav" aria-label="主要導覽">
+        <button class="nav-link active" data-view="itinerary" type="button">每日行程</button>
+        <button class="nav-link" data-view="explore" type="button">景點總覽</button>
+        <button class="nav-link" data-view="essentials" type="button">旅途資訊</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-photo" role="img" aria-label="北海道美瑛白金青池"></div>
+      <div class="hero-shade"></div>
+      <div class="hero-inner">
+        <div class="eyebrow light">JACKY'S TRAVEL FIELD GUIDE <span class="eyebrow-line"></span> 2026</div>
+        <h1 id="hero-title">北海道，<br><em>把每一天走成風景。</em></h1>
+        <p>從札幌的夜色，到洞爺湖花火、小樽街道與美瑛秋景。<br class="desktop-only">你的七日行程、景點故事與下一站導航，都在這裡。</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#journey">開始旅程 <span aria-hidden="true">↗</span></a>
+          <span class="hero-date">10.21 <span>—</span> 10.27 <small>2026</small></span>
+        </div>
+      </div>
+      <div class="hero-side-label" aria-hidden="true">NORTH TO REMEMBER · 北海道</div>
+    </section>
+
+    <div class="intro-strip" aria-label="旅程摘要">
+      <div><strong>07</strong><span>旅行日數</span></div>
+      <div><strong>55</strong><span>已排定行程</span></div>
+      <div><strong>04</strong><span>住宿地點</span></div>
+      <div class="intro-note"><span class="signal-dot"></span><span>行程以日本時間顯示<br><small>資料整理：2026.10.04</small></span></div>
+    </div>
+
+    <section class="view-section" id="journey" data-section="itinerary">
+      <div class="section-heading">
+        <div><span class="kicker">YOUR ROUTE / 每日旅程</span><h2>今天，往哪裡走？</h2></div>
+        <p>選一天查看完整動線。完成景點可自行勾選，下一站會跟著更新。</p>
+      </div>
+      <div class="day-tabs" id="day-tabs" role="tablist" aria-label="選擇行程日期"></div>
+      <div class="day-banner" id="day-banner"></div>
+      <div class="itinerary-grid">
+        <div>
+          <div class="toolbar">
+            <div class="toolbar-title"><span class="kicker">DAY PLAN</span><h3 id="day-count">每日行程</h3></div>
+            <fieldset class="mode-switch" aria-label="導航方式">
+              <legend class="sr-only">導航方式</legend>
+              <button type="button" data-mode="driving">開車</button>
+              <button type="button" data-mode="walking">步行</button>
+              <button type="button" data-mode="transit">大眾運輸</button>
+            </fieldset>
+          </div>
+          <div class="timeline" id="timeline"></div>
+        </div>
+        <aside class="journey-aside" aria-label="本日實用資訊">
+          <div class="aside-card next-card" id="next-card"></div>
+          <div class="aside-card" id="day-alerts"></div>
+          <div class="aside-card official-card" id="day-verified"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view-section hidden" data-section="explore">
+      <div class="section-heading">
+        <div><span class="kicker">THE ATLAS / 景點總覽</span><h2>想去的地方，都在這裡。</h2></div>
+        <p>搜尋已排定行程與備選景點，收藏想再看的地點。</p>
+      </div>
+      <div class="explore-controls">
+        <label class="search-box"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜尋景點、城市或日文名稱" autocomplete="off" aria-label="搜尋景點"></label>
+        <div class="filter-row" id="group-filters" aria-label="景點分組"></div>
+      </div>
+      <div class="explore-count" id="explore-count"></div>
+      <div class="card-grid" id="explore-grid"></div>
+    </section>
+
+    <section class="view-section hidden" data-section="essentials">
+      <div class="section-heading">
+        <div><span class="kicker">BEFORE YOU GO / 旅途資訊</span><h2>安心出發，從這裡開始。</h2></div>
+        <p>航班、住宿、當日提醒與已核對的活動資訊集中查看。</p>
+      </div>
+      <div class="essentials-grid">
+        <div class="info-panel"><span class="panel-number">01 / FLIGHTS</span><h3>航班資訊</h3><div id="flights"></div><p class="panel-foot">時間來自 Notion。航班異動請以航空公司與電子機票為準；訂位代號未公開。</p></div>
+        <div class="info-panel"><span class="panel-number">02 / STAYS</span><h3>住宿導航</h3><div id="stays"></div><p class="panel-foot">入住方式及門禁資訊請查看原訂房通知。</p></div>
+        <div class="info-panel full-panel"><span class="panel-number">03 / HEADS UP</span><h3>出發前先確認</h3><div class="alert-list" id="all-alerts"></div></div>
+        <div class="info-panel full-panel practical-panel">
+          <span class="panel-number">04 / ON THE ROAD</span><h3>旅途小抄</h3>
+          <div class="practical-grid">
+            <div><span class="practical-icon">↗</span><h4>導航</h4><p>每站「開始導航」會開啟 Google Maps 路線，起點由地圖依你目前位置設定。離線時可看本站文字，路線仍需連網。</p></div>
+            <div><span class="practical-icon">✦</span><h4>自駕</h4><p>取還車地點依租車確認單。出發前檢查油量、停車場、ETC／HEP 適用範圍與高海拔道路天候。</p></div>
+            <div><span class="practical-icon">☁</span><h4>十月下旬</h4><p>山區與湖畔較冷，帶防風保暖外套；藻岩山、十勝岳等景點應於出發當天再看營運與路況。</p></div>
+            <div><span class="practical-icon">☎</span><h4>緊急情況</h4><p>日本警察 110、消防／救護 119。護照、保險與租車資料請存於自己的安全位置，不放在公開網站。</p></div>
+          </div>
+          <div class="useful-links"><a href="https://www.jma.go.jp/bosai/forecast/#area_type=offices&area_code=016000" target="_blank" rel="noopener noreferrer">北海道天氣 ↗</a><a href="https://www.hokkaido-airports.com/en/new-chitose/" target="_blank" rel="noopener noreferrer">新千歲機場 ↗</a><a href="https://www.driveplaza.com/traffic/" target="_blank" rel="noopener noreferrer">高速道路路況 ↗</a><a href="https://www.japan.travel/en/plan/hotline/" target="_blank" rel="noopener noreferrer">JNTO 旅客支援 ↗</a></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner"><div class="footer-brand">北 <span>HOKKAIDO<br><small>2026 · 秋の七日間</small></span></div><p>為旅途中快速查閱而整理。行程、營業時間與票價可能變動，出發前請再查官方公告。</p><a href="https://app.notion.com/p/2a5ff866afef807a90ffe241bae32ef0" target="_blank" rel="noopener noreferrer">原始 Notion ↗</a></div>
+  </footer>
+
+  <dialog id="place-dialog" class="place-dialog" aria-labelledby="dialog-title">
+    <button class="dialog-close" id="dialog-close" type="button" aria-label="關閉景點解說">×</button>
+    <div id="dialog-content"></div>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
