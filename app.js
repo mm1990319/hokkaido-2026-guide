@@ -3,13 +3,13 @@ const $$ = (s) => [...document.querySelectorAll(s)];
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
 }[c]));
-const travelModes = {driving:"開車",walking:"步行",transit:"大眾運輸"};
 const glyphs = {美食:"食",景觀:"山",公園:"森",建築:"街",市場:"市",博物館:"館",徒步區:"道",超市:"買",飯店:"宿",機場:"空",交通:"車",車站:"站"};
 const readSet = (key) => { try { return new Set(JSON.parse(localStorage.getItem(key) || "[]")); } catch { return new Set(); } };
 const state = {
   data:null, day:1, view:"itinerary", mode:"driving", group:"全部", search:"",
   done:readSet("hokkaido-done"), favorites:readSet("hokkaido-favorites")
 };
+const weatherState={records:null,updatedAt:null,error:null,loading:false};
 
 function saveSet(key,set){localStorage.setItem(key,JSON.stringify([...set]));}
 function toast(message){
@@ -17,10 +17,13 @@ function toast(message){
   clearTimeout(toast.timer); toast.timer=setTimeout(()=>target.classList.remove("show"),2600);
 }
 function localToday(){
-  return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+  const values=Object.fromEntries(parts.map(part=>[part.type,part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 function pathFor(path){ return path ? "./"+path : ""; }
 function imgStyle(place){return place.image ? `style="background-image:url('${esc(pathFor(place.image.path))}')"` : "";}
+function imageBadge(image){return image?.representative?'<span class="photo-badge">區域參考照片</span>':"";}
 function dayPlaces(day){
   return state.data.places.filter(p=>p.day===day).sort((a,b)=>{
     if(!a.time)return 1;if(!b.time)return -1;
@@ -72,8 +75,8 @@ function selectView(view,scroll=true){
   $$(".nav-link").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
   $$(".view-section").forEach(s=>s.classList.toggle("hidden",s.dataset.section!==view));
   if(view==="explore")renderExplore();
-  if(view==="essentials")renderEssentials();
-  if(scroll)window.scrollTo({top:0,behavior:"smooth"});
+  if(view==="essentials"){renderEssentials();loadWeather();}
+  if(scroll)$(`[data-section="${view}"]`).scrollIntoView({behavior:"smooth",block:"start"});
 }
 function selectDay(day){
   state.day=day;
@@ -97,7 +100,7 @@ function renderBanner(){
 function renderStop(place,index){
   const done=state.done.has(place.id),glyph=glyphs[place.category]||"北";
   const image=place.image
-    ? `<div class="stop-image" role="img" aria-label="${esc(place.image.alt||place.name)}" ${imgStyle(place)}><span class="image-index">${String(index+1).padStart(2,"0")}</span></div>`
+    ? `<div class="stop-image" role="img" aria-label="${esc(place.image.alt||place.name)}" ${imgStyle(place)}><span class="image-index">${String(index+1).padStart(2,"0")}</span>${imageBadge(place.image)}</div>`
     : `<div class="stop-image placeholder" role="img" aria-label="此地點尚無已授權照片" data-glyph="${esc(glyph)}"><span class="image-index">${String(index+1).padStart(2,"0")}</span></div>`;
   const query=navQueryFor(place);
   const nav=query
@@ -138,7 +141,6 @@ function renderAside(){
 }
 function renderItinerary(){
   renderTabs();renderBanner();renderTimeline();renderAside();
-  $$(".mode-switch button").forEach(b=>b.classList.toggle("active",b.dataset.mode===state.mode));
 }
 function groups(){
   return ["全部","已排程","備選","預排","未排程","收藏"];
@@ -160,7 +162,7 @@ function filteredPlaces(){
 function renderExploreCard(p){
   const glyph=glyphs[p.category]||"北";
   return `<article class="explore-card">
-    <div class="card-photo" role="img" aria-label="${esc(p.image?p.image.alt||p.name:"此地點尚無已授權照片")}" ${imgStyle(p)}>${p.image?"":esc(glyph)}</div>
+    <div class="card-photo" role="img" aria-label="${esc(p.image?p.image.alt||p.name:"此地點尚無已授權照片")}" ${imgStyle(p)}>${p.image?imageBadge(p.image):esc(glyph)}</div>
     <div class="card-body"><span class="card-meta">${esc(p.group)} ${p.day?"· DAY "+String(p.day).padStart(2,"0"):""} · ${esc(p.city||"北海道")}</span>
       <h3>${esc(p.name)}</h3><p>${esc(p.summary)}</p></div>
     <div class="card-actions"><button type="button" class="text-button" data-detail="${esc(p.id)}">查看解說 →</button>
@@ -174,14 +176,105 @@ function renderExplore(){
   $("#explore-grid").innerHTML=list.length?list.map(renderExploreCard).join(""):
     `<div class="empty-state">沒有符合條件的地點。試試不同關鍵字。</div>`;
 }
+function shiftDate(date,days){
+  return new Date(Date.parse(date+"T00:00:00Z")+days*86400000).toISOString().slice(0,10);
+}
+function shortDate(date){return date.slice(5).replace("-","/");}
+function weatherDescription(code){
+  if(code===0)return ["☀","晴朗"];
+  if(code===1)return ["🌤","大致晴朗"];
+  if(code===2)return ["⛅","局部多雲"];
+  if(code===3)return ["☁","陰天"];
+  if(code===45||code===48)return ["🌫","起霧"];
+  if([51,53,55,56,57].includes(code))return ["🌦","毛毛雨"];
+  if([61,63,65,66,67,80,81,82].includes(code))return ["🌧","下雨"];
+  if([71,73,75,77,85,86].includes(code))return ["❄","降雪"];
+  if([95,96,99].includes(code))return ["⛈","雷雨"];
+  return ["◌","天氣待確認"];
+}
+function renderWeather(){
+  if(!state.data)return;
+  const today=localToday(),horizon=shiftDate(today,15);
+  const first=state.data.days[0].date,last=state.data.days.at(-1).date;
+  let status="";
+  if(today>last)status="旅程日期已過，本站不會把目前天氣誤當成當時預報。";
+  else if(horizon<first)status=`目前逐日預報最多到 ${shortDate(horizon)}；旅行日預報將自 ${shortDate(shiftDate(first,-15))} 起陸續顯示。`;
+  else if(weatherState.loading)status="正在讀取旅行地點的逐日預報…";
+  else if(weatherState.error)status=`天氣暫時無法更新：${weatherState.error}。可稍後再按「更新天氣」。`;
+  else if(weatherState.updatedAt)status=`已更新 · ${new Intl.DateTimeFormat("zh-TW",{timeZone:"Asia/Tokyo",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(weatherState.updatedAt))} 日本時間`;
+  else status="正在準備逐日預報。";
+  $("#weather-status").textContent=status;
+  const locations=new Map(state.data.weatherLocations.map(loc=>[loc.id,loc]));
+  $("#weather-grid").innerHTML=state.data.weatherByDay.map(item=>{
+    const day=state.data.days[item.day-1],date=day.date;
+    const spots=item.locationIds.map(id=>{
+      const loc=locations.get(id),forecast=weatherState.records?.[id]?.[date];
+      let weather="";
+      if(date<today)weather='<span class="weather-pending">日期已過</span>';
+      else if(date>horizon)weather=`<span class="weather-pending">${shortDate(shiftDate(date,-15))} 起可查</span>`;
+      else if(forecast){
+        const [icon,label]=weatherDescription(forecast.code);
+        const temp=forecast.lo==null||forecast.hi==null?"溫度待更新":`${Math.round(forecast.lo)}–${Math.round(forecast.hi)}°C`;
+        const rain=forecast.rain==null?"降雨待更新":`降雨 ${Math.round(forecast.rain)}%`;
+        weather=`<span class="weather-icon" aria-hidden="true">${icon}</span><span class="weather-condition">${esc(label)}</span><strong>${esc(temp)}</strong><small>${esc(rain)}</small>`;
+      }else weather=`<span class="weather-pending">${weatherState.loading?"讀取中":"預報待更新"}</span>`;
+      return `<div class="weather-spot"><span class="weather-place">${esc(loc.name)}</span><div class="weather-values">${weather}</div></div>`;
+    }).join("");
+    return `<article class="weather-day"><div class="weather-day-head"><span>DAY ${String(item.day).padStart(2,"0")}</span><strong>${esc(day.label)}</strong><small>${esc(day.route)}</small></div><div class="weather-spots">${spots}</div></article>`;
+  }).join("");
+}
+async function loadWeather(force=false){
+  if(weatherState.loading||!state.data)return;
+  const today=localToday(),first=state.data.days[0].date,last=state.data.days.at(-1).date;
+  if(shiftDate(today,15)<first||today>last){renderWeather();return;}
+  if(!force){
+    try{
+      const saved=JSON.parse(localStorage.getItem("hokkaido-weather-v1")||"null");
+      if(saved?.records && Date.now()-saved.updatedAt<30*60*1000){
+        weatherState.records=saved.records;weatherState.updatedAt=saved.updatedAt;weatherState.error=null;
+        renderWeather();return;
+      }
+    }catch{}
+  }
+  weatherState.loading=true;weatherState.error=null;renderWeather();
+  const locations=state.data.weatherLocations;
+  const url=new URL("https://api.open-meteo.com/v1/forecast");
+  url.searchParams.set("latitude",locations.map(x=>x.lat).join(","));
+  url.searchParams.set("longitude",locations.map(x=>x.lon).join(","));
+  url.searchParams.set("daily","weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max");
+  url.searchParams.set("timezone","Asia/Tokyo");
+  url.searchParams.set("forecast_days","16");
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+  try{
+    const response=await fetch(url,{signal:controller.signal});
+    if(!response.ok)throw new Error("預報服務回應失敗");
+    const result=await response.json(),items=Array.isArray(result)?result:[result];
+    if(items.length!==locations.length)throw new Error("地點資料不完整");
+    const records={};
+    items.forEach((item,index)=>{
+      records[locations[index].id]={};
+      item.daily.time.forEach((date,i)=>{
+        records[locations[index].id][date]={code:item.daily.weather_code[i],
+          hi:item.daily.temperature_2m_max[i],lo:item.daily.temperature_2m_min[i],
+          rain:item.daily.precipitation_probability_max[i]};
+      });
+    });
+    weatherState.records=records;weatherState.updatedAt=Date.now();
+    try{localStorage.setItem("hokkaido-weather-v1",JSON.stringify({records,updatedAt:weatherState.updatedAt}));}catch{}
+  }catch(error){weatherState.error=error.name==="AbortError"?"連線逾時":"請確認網路連線";}
+  finally{clearTimeout(timer);weatherState.loading=false;renderWeather();}
+}
 function renderEssentials(){
-  $("#flights").innerHTML=state.data.flights.map(f=>`<div class="info-row">
-    <span>${esc(f.direction)}<br><small>${esc(f.date)}</small></span>
-    <div><strong>${esc(f.flight)}</strong><small>${esc(f.from)} → ${esc(f.to)}</small></div>
-    <div class="timepair">${esc(f.departure)} → ${esc(f.arrival)}<small>兩地當地時間</small></div>
+  renderWeather();
+  $("#flights").innerHTML=state.data.flights.map(f=>`<div class="flight-row">
+    <span class="flight-direction">${esc(f.direction)} · ${esc(f.date)}</span>
+    <strong>${esc(f.flight)}</strong>
+    <div class="flight-times"><div><small>${esc(f.from)} · ${esc(f.departureZone)}</small><b>${esc(f.departure)}</b></div>
+      <span aria-hidden="true">→</span><div><small>${esc(f.to)} · ${esc(f.arrivalZone)}</small><b>${esc(f.arrival)}</b></div></div>
   </div>`).join("");
-  $("#stays").innerHTML=state.data.stays.map(s=>`<div class="info-row">
-    <span>${esc(s.nights)}</span><div><strong>${esc(s.name)}</strong></div>
+  $("#stays").innerHTML=state.data.stays.map(s=>`<div class="info-row stay-row">
+    <div class="stay-photo" role="img" aria-label="${esc(s.image?.alt||s.name)}" ${imgStyle(s)}>${imageBadge(s.image)}</div>
+    <div><small>${esc(s.nights)}</small><strong>${esc(s.name)}</strong></div>
     ${navQueryFor(s)?`<a class="text-button primary-link" href="${esc(navigationUrl(navQueryFor(s)))}" target="_blank" rel="noopener noreferrer">導航 ↗</a>`:""}</div>
     ${s.privateNavKey?privateNavForm(s):""}`).join("");
   $("#all-alerts").innerHTML=state.data.alerts.map(a=>`<div class="alert-box">
@@ -221,7 +314,7 @@ function photoCredit(image){
   const source=image.source==="Wikimedia Commons"?
     `${image.artist?esc(image.artist)+" · ":""}${esc(image.license)} · Wikimedia Commons`:
     `原 Notion 引用圖片 · ${esc(image.source)}`;
-  return `<p class="source-line">圖片：${source} ${sourceLink(image.sourceUrl,"來源")}</p>`;
+  return `<p class="source-line">${image.representative?"參考照片（非此行程地點實景）":"圖片"}：${source} ${sourceLink(image.sourceUrl,"來源")}</p>`;
 }
 function detailFacts(place){
   const facts=[];
@@ -235,13 +328,13 @@ function detailFacts(place){
 function openDetail(id){
   const p=state.data.places.find(x=>x.id===id);if(!p)return;
   const hero=p.image
-    ?`<div class="dialog-hero" role="img" aria-label="${esc(p.image.alt||p.name)}" ${imgStyle(p)}></div>`
+    ?`<div class="dialog-hero" role="img" aria-label="${esc(p.image.alt||p.name)}" ${imgStyle(p)}>${imageBadge(p.image)}</div>`
     :`<div class="dialog-hero" role="img" aria-label="此地點尚無已授權照片">${esc(glyphs[p.category]||"北")}</div>`;
   const query=navQueryFor(p);
   const nav=query?`<a class="button button-primary" href="${esc(navigationUrl(query))}" target="_blank" rel="noopener noreferrer">Google Maps 導航 ↗</a>`:"";
-  const alertTitle={"藻岩山展望台｜中腹駅":"藻岩山導航至中腹站","登別伊達時代村":"登別表演時間衝突",
-    "千歲還車":"還車地點須看確認單","迴轉壽司 Toriton Kita 8":"壽司用餐時間待確認",
-    "北海道 to 台灣":"回程航班時間與行程表不一致"}[p.name];
+  const alertTitle={"藻岩山展望台｜中腹駅":"藻岩山導航至中腹站","登別伊達時代村":"登別入園與演出銜接",
+    "千歲還車":"還車地點須看確認單","迴轉壽司 Toriton Kita 8":"壽司用餐時段差兩小時",
+    "北海道 to 台灣":"回程請以日本時間報到"}[p.name];
   const relatedAlert=state.data.alerts.find(a=>a.title===alertTitle);
   const warning=relatedAlert?`<div class="notice-inline"><strong>${esc(relatedAlert.title)}：</strong> ${esc(relatedAlert.text)} ${sourceLink(relatedAlert.url,"來源")}</div>`:"";
   const highlights=p.highlights.length?`<section class="dialog-section"><h3>值得看什麼</h3><ul>${p.highlights.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></section>`:"";
@@ -280,7 +373,7 @@ function onSubmit(e){
 function onClick(e){
   const nav=e.target.closest("[data-view]");if(nav){selectView(nav.dataset.view);return;}
   const day=e.target.closest("[data-day]");if(day){selectDay(Number(day.dataset.day));return;}
-  const mode=e.target.closest("[data-mode]");if(mode){state.mode=mode.dataset.mode;renderItinerary();return;}
+  const refresh=e.target.closest("[data-weather-refresh]");if(refresh){loadWeather(true);return;}
   const done=e.target.closest("[data-done]");if(done){
     const id=done.dataset.done;state.done.has(id)?state.done.delete(id):state.done.add(id);
     saveSet("hokkaido-done",state.done);renderItinerary();toast(state.done.has(id)?"已標記完成":"已恢復為未完成");return;
