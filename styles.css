@@ -59,3 +59,7 @@ button,input{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:
 @media(max-width:800px){.weather-grid{grid-template-columns:1fr}}
 @media(max-width:650px){.weather-heading{display:block}.weather-refresh{margin-bottom:12px}.weather-day-head small{font-size:9px}.weather-spot{grid-template-columns:78px minmax(0,1fr)}.weather-values strong{margin-left:0}.info-row.stay-row{grid-template-columns:65px minmax(0,1fr) auto}.stay-photo{width:65px;height:61px}.flight-times b{font-size:22px}}
 @media(max-width:650px){.hero h1{font-size:35px;line-height:1.22}.section-heading h2{font-size:27px;line-height:1.28}}
+.stop-time .stop-end{color:var(--pine);font-size:12px;font-weight:700;letter-spacing:0;white-space:nowrap;margin-top:6px}
+@media(max-width:650px){.stop-time .stop-end{font-size:10px;margin-top:5px}}
+.timeline:before{left:6px}.stop:before{left:1px}.stop-time{padding-left:23px}
+@media(max-width:650px){.timeline:before{left:5px}.stop:before{left:0}.stop-time{padding-left:18px}}

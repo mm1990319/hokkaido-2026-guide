@@ -24,6 +24,12 @@ function localToday(){
 function pathFor(path){ return path ? "./"+path : ""; }
 function imgStyle(place){return place.image ? `style="background-image:url('${esc(pathFor(place.image.path))}')"` : "";}
 function imageBadge(image){return image?.representative?'<span class="photo-badge">區域參考照片</span>':"";}
+function isReturnFlight(place){return place.name==="北海道 to 台灣";}
+function timeRange(place){
+  if(!place.time)return "時間未定";
+  if(isReturnFlight(place))return `${place.time} 日本起飛${place.endTime?" → "+place.endTime+" 台灣抵達":""}`;
+  return `${place.time}${place.endTime?"–"+place.endTime:""}`;
+}
 function dayPlaces(day){
   return state.data.places.filter(p=>p.day===day).sort((a,b)=>{
     if(!a.time)return 1;if(!b.time)return -1;
@@ -92,7 +98,7 @@ function renderBanner(){
   const meta=state.data.days[state.day-1];
   const places=dayPlaces(state.day);
   const done=places.filter(p=>state.done.has(p.id)).length;
-  $("#day-banner").innerHTML=`<div><div class="day-index">DAY ${String(state.day).padStart(2,"0")} · ${esc(meta.date)} · 日本時間</div>
+  $("#day-banner").innerHTML=`<div><div class="day-index">DAY ${String(state.day).padStart(2,"0")} · ${esc(meta.date)} · ${state.day===7?"航班抵台時間另標":"日本時間"}</div>
     <h3>${esc(meta.title)}</h3><p>${esc(meta.route)}</p></div>
     <div class="banner-stat"><strong>${done} / ${places.length}</strong><span>已完成行程</span></div>`;
   $("#day-count").textContent=`${meta.label} · ${places.length} 個行程`;
@@ -109,7 +115,7 @@ function renderStop(place,index){
     : `<span class="text-button" aria-label="此項目尚無可確認的導航地點">地點待確認</span>`;
   const note=place.note?`<p class="stop-note">${esc(place.note)}</p>`:"";
   return `<article class="stop ${done?"done":""}" id="stop-${esc(place.id)}">
-    <div class="stop-time"><strong>${place.time||"未定"}</strong><span>${place.time?"JST · 日本":"時間待確認"}</span></div>
+    <div class="stop-time"><strong>${esc(place.time||"未定")}</strong>${isReturnFlight(place)?`<span>日本起飛</span>${place.endTime?`<span class="stop-end">${esc(place.endTime)}</span><span>台灣抵達</span>`:""}`:`${place.endTime?`<span class="stop-end">至 ${esc(place.endTime)}</span>`:""}<span>${place.time?"日本時間":"時間待確認"}</span>`}</div>
     <div class="stop-card"><div class="stop-card-inner">${image}
       <div class="stop-content"><div class="stop-top"><span class="category-tag">${esc(place.category)} · ${esc(place.city||"北海道")}</span>
         <button class="check-button" type="button" data-done="${esc(place.id)}" aria-label="${done?"標記未完成":"標記完成"}：${esc(place.name)}" aria-pressed="${done}">✓</button></div>
@@ -127,7 +133,7 @@ function renderAside(){
   $("#next-card").classList.add("dark");
   $("#next-card").innerHTML=next
     ? `<span class="aside-kicker">NEXT DESTINATION / 下一站</span><h4>${esc(next.name)}</h4>
-       <p>${esc(next.summary)}</p><span class="small-meta">${next.time||"時間未定"} · ${esc(next.city||"北海道")}</span>
+       <p>${esc(next.summary)}</p><span class="small-meta">${esc(timeRange(next))} · ${esc(next.city||"北海道")}</span>
        <a class="button button-primary" href="${esc(navigationUrl(navQueryFor(next)))}" target="_blank" rel="noopener noreferrer">導航到下一站 ↗</a>`
     : `<span class="aside-kicker">ALL DONE</span><h4>今天的路，走完了。</h4><p>可以到景點總覽看看備選地點。</p>`;
   const alerts=state.data.alerts.filter(x=>x.day===state.day);
@@ -340,7 +346,7 @@ function openDetail(id){
   const highlights=p.highlights.length?`<section class="dialog-section"><h3>值得看什麼</h3><ul>${p.highlights.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></section>`:"";
   const tips=p.tips.length?`<section class="dialog-section"><h3>旅遊小提醒</h3><ul>${p.tips.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></section>`:"";
   $("#dialog-content").innerHTML=hero+`<div class="dialog-body">
-    <div class="dialog-meta">${esc(p.group)} ${p.day?"· DAY "+String(p.day).padStart(2,"0"):""} · ${esc(p.city||"北海道")} · ${esc(p.category)}</div>
+    <div class="dialog-meta">${esc(p.group)} ${p.day?"· DAY "+String(p.day).padStart(2,"0"):""} · ${esc(p.city||"北海道")} · ${esc(p.category)}${p.time?" · "+esc(timeRange(p))+(isReturnFlight(p)?"":" JST"):""}</div>
     <h2 id="dialog-title">${esc(p.name)}</h2>${p.localName?`<p class="dialog-local">${esc(p.localName)}</p>`:""}
     <p class="dialog-summary">${esc(p.summary)}</p>
     ${p.note?`<div class="notice-inline"><strong>行程備註：</strong> ${esc(p.note)}</div>`:""}
