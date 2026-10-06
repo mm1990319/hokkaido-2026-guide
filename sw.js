@@ -1,4 +1,4 @@
-const CACHE = "hokkaido-guide-2026-10-04-v5";
+const CACHE = "hokkaido-guide-2026-10-06-v6";
 const CORE = ["./", "./index.html", "./styles.css", "./app.js", "./data.json",
               "./manifest.webmanifest", "./assets/icon.svg"];
 

@@ -50,14 +50,20 @@ button,input{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:
 .weather-day-head{background:#f3f5ef;padding:10px 13px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--line)}
 .weather-day-head span{font-size:9px;letter-spacing:.13em;color:var(--coral-dark);font-weight:800;white-space:nowrap}
 .weather-day-head strong{font-family:var(--serif);font-size:17px;white-space:nowrap}.weather-day-head small{font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.weather-spots{padding:2px 13px 5px}.weather-spot{display:grid;grid-template-columns:86px minmax(0,1fr);gap:8px;align-items:center;border-bottom:1px solid #edf0eb;padding:9px 0}.weather-spot:last-child{border:0}
+.weather-spots{padding:2px 13px 5px}.weather-spot{border-bottom:1px solid #edf0eb;padding:12px 0}.weather-spot:last-child{border:0}
+.weather-spot-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px}.weather-spot-head .weather-values{flex:1;min-width:170px}
+.weather-periods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.weather-period{min-width:0;background:#f5f7f2;padding:10px 8px;line-height:1.5}
+.weather-period-head{display:flex;align-items:center;justify-content:space-between;gap:4px;color:var(--pine);font-size:11px}.weather-period-head time{font-size:10px;color:#6d7d73}
+.weather-period-condition{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-height:30px;font-size:11px;color:#596a61;margin-top:5px}
+.weather-period>strong{display:block;font-size:20px;color:var(--pine);line-height:1.4}.weather-period>small{display:block;font-size:10px;color:#6d7d73}
 .weather-place{font-size:11px;font-weight:700;color:var(--pine)}.weather-values{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:11px;line-height:1.4}
 .weather-icon{font-size:17px}.weather-condition{color:#596a61}.weather-values strong{font-size:12px;margin-left:auto;white-space:nowrap}.weather-values small{color:#6d7d73;font-size:10px;white-space:nowrap}.weather-pending{color:#86958b;font-size:10px}
 .weather-panel .panel-foot a{text-decoration:underline;color:var(--coral-dark)}
 .flight-row{border-top:1px solid var(--line);padding:14px 0}.flight-direction{display:block;font-size:11px;color:#82958a}.flight-row>strong{display:block;font-size:15px;color:var(--pine);margin:2px 0 10px}.flight-times{display:flex;align-items:center;gap:12px}.flight-times>div{min-width:0;flex:1}.flight-times small{display:block;font-size:10px;color:#6d8074;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.flight-times b{display:block;font-family:var(--serif);font-size:24px;font-weight:600;line-height:1.25}.flight-times>span{font-size:16px;color:var(--coral-dark)}
 .info-row.stay-row{grid-template-columns:76px minmax(0,1fr) auto}.stay-photo{width:76px;height:64px;background:#d6e5df center/cover}.stay-photo .photo-badge{top:auto;bottom:3px;right:3px;left:3px;text-align:center;font-size:7px;padding:2px}.stay-row strong{line-height:1.45}.stay-row .text-button{white-space:nowrap}
 @media(max-width:800px){.weather-grid{grid-template-columns:1fr}}
-@media(max-width:650px){.weather-heading{display:block}.weather-refresh{margin-bottom:12px}.weather-day-head small{font-size:9px}.weather-spot{grid-template-columns:78px minmax(0,1fr)}.weather-values strong{margin-left:0}.info-row.stay-row{grid-template-columns:65px minmax(0,1fr) auto}.stay-photo{width:65px;height:61px}.flight-times b{font-size:22px}}
+@media(max-width:650px){.weather-heading{display:block}.weather-refresh{margin-bottom:12px}.weather-day-head small{font-size:9px}.weather-spot-head{display:block}.weather-spot-head .weather-values{margin-top:4px}.weather-values strong{margin-left:0}.weather-period{padding:9px 6px}.weather-period-head{display:block}.weather-period-head time{display:block}.info-row.stay-row{grid-template-columns:65px minmax(0,1fr) auto}.stay-photo{width:65px;height:61px}.flight-times b{font-size:22px}}
 @media(max-width:650px){.hero h1{font-size:35px;line-height:1.22}.section-heading h2{font-size:27px;line-height:1.28}}
 .stop-time .stop-end{color:var(--pine);font-size:12px;font-weight:700;letter-spacing:0;white-space:nowrap;margin-top:6px}
 @media(max-width:650px){.stop-time .stop-end{font-size:10px;margin-top:5px}}

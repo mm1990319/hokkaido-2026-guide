@@ -10,6 +10,12 @@ const state = {
   done:readSet("hokkaido-done"), favorites:readSet("hokkaido-favorites")
 };
 const weatherState={records:null,updatedAt:null,error:null,loading:false};
+const weatherCacheKey="hokkaido-weather-v2";
+const weatherPeriods=[
+  {id:"morning",label:"早上",time:"08:00"},
+  {id:"noon",label:"中午",time:"13:00"},
+  {id:"evening",label:"晚上",time:"19:00"}
+];
 
 function saveSet(key,set){localStorage.setItem(key,JSON.stringify([...set]));}
 function toast(message){
@@ -186,7 +192,8 @@ function shiftDate(date,days){
   return new Date(Date.parse(date+"T00:00:00Z")+days*86400000).toISOString().slice(0,10);
 }
 function shortDate(date){return date.slice(5).replace("-","/");}
-function weatherDescription(code){
+function weatherDescription(code,isDay=1){
+  if(isDay===0&&[0,1,2].includes(code))return ["☾",code===0?"晴朗":code===1?"大致晴朗":"局部多雲"];
   if(code===0)return ["☀","晴朗"];
   if(code===1)return ["🌤","大致晴朗"];
   if(code===2)return ["⛅","局部多雲"];
@@ -198,6 +205,46 @@ function weatherDescription(code){
   if([95,96,99].includes(code))return ["⛈","雷雨"];
   return ["◌","天氣待確認"];
 }
+function weatherTemperature(value,fallback="溫度待更新"){
+  return Number.isFinite(value)?`${Math.round(value)}°C`:fallback;
+}
+function weatherUpdatedLabel(){
+  return new Intl.DateTimeFormat("zh-TW",{timeZone:"Asia/Tokyo",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(weatherState.updatedAt));
+}
+function renderWeatherPeriods(forecast){
+  return `<div class="weather-periods">${weatherPeriods.map(period=>{
+    const values=forecast?.periods?.[period.id];
+    const [icon,label]=weatherDescription(values?.code,values?.isDay);
+    const rain=Number.isFinite(values?.rain)?`降雨 ${Math.round(values.rain)}%`:"降雨待更新";
+    return `<div class="weather-period"><div class="weather-period-head"><b>${period.label}</b><time>${period.time}</time></div>
+      <div class="weather-period-condition"><span class="weather-icon" aria-hidden="true">${icon}</span><span>${esc(label)}</span></div>
+      <strong>${esc(weatherTemperature(values?.temp))}</strong>
+      <small>體感 ${esc(weatherTemperature(values?.feels,"待更新"))}</small><small>${esc(rain)}</small></div>`;
+  }).join("")}</div>`;
+}
+function parseWeatherRecords(items,locations){
+  if(items.length!==locations.length)throw new Error("地點資料不完整");
+  const records={};
+  items.forEach((item,index)=>{
+    if(!Array.isArray(item.daily?.time))throw new Error("逐日資料不完整");
+    const hourly=item.hourly||{};
+    const hourIndex=new Map((hourly.time||[]).map((time,i)=>[time,i]));
+    records[locations[index].id]={};
+    item.daily.time.forEach((date,i)=>{
+      const periods={};
+      weatherPeriods.forEach(period=>{
+        const hour=hourIndex.get(`${date}T${period.time}`);
+        if(hour===undefined)return;
+        periods[period.id]={code:hourly.weather_code?.[hour],temp:hourly.temperature_2m?.[hour],
+          feels:hourly.apparent_temperature?.[hour],rain:hourly.precipitation_probability?.[hour],isDay:hourly.is_day?.[hour]};
+      });
+      records[locations[index].id][date]={code:item.daily.weather_code?.[i],
+        hi:item.daily.temperature_2m_max?.[i],lo:item.daily.temperature_2m_min?.[i],
+        rain:item.daily.precipitation_probability_max?.[i],periods};
+    });
+  });
+  return records;
+}
 function renderWeather(){
   if(!state.data)return;
   const today=localToday(),horizon=shiftDate(today,15);
@@ -205,10 +252,10 @@ function renderWeather(){
   let status="";
   if(today>last)status="旅程日期已過，本站不會把目前天氣誤當成當時預報。";
   else if(horizon<first)status=`目前逐日預報最多到 ${shortDate(horizon)}；旅行日預報將自 ${shortDate(shiftDate(first,-15))} 起陸續顯示。`;
-  else if(weatherState.loading)status="正在讀取旅行地點的逐日預報…";
-  else if(weatherState.error)status=`天氣暫時無法更新：${weatherState.error}。可稍後再按「更新天氣」。`;
-  else if(weatherState.updatedAt)status=`已更新 · ${new Intl.DateTimeFormat("zh-TW",{timeZone:"Asia/Tokyo",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(weatherState.updatedAt))} 日本時間`;
-  else status="正在準備逐日預報。";
+  else if(weatherState.loading)status="正在讀取旅行地點的早、中、晚預報…";
+  else if(weatherState.error)status=`天氣暫時無法更新：${weatherState.error}。${weatherState.updatedAt?`目前保留 ${weatherUpdatedLabel()} 日本時間的資料。`:""}可稍後再按「更新天氣」。`;
+  else if(weatherState.updatedAt)status=`已更新 · ${weatherUpdatedLabel()} 日本時間 · 早、中、晚為指定時刻的逐時預報`;
+  else status="正在準備早、中、晚預報。";
   $("#weather-status").textContent=status;
   const locations=new Map(state.data.weatherLocations.map(loc=>[loc.id,loc]));
   $("#weather-grid").innerHTML=state.data.weatherByDay.map(item=>{
@@ -220,11 +267,12 @@ function renderWeather(){
       else if(date>horizon)weather=`<span class="weather-pending">${shortDate(shiftDate(date,-15))} 起可查</span>`;
       else if(forecast){
         const [icon,label]=weatherDescription(forecast.code);
-        const temp=forecast.lo==null||forecast.hi==null?"溫度待更新":`${Math.round(forecast.lo)}–${Math.round(forecast.hi)}°C`;
-        const rain=forecast.rain==null?"降雨待更新":`降雨 ${Math.round(forecast.rain)}%`;
+        const temp=!Number.isFinite(forecast.lo)||!Number.isFinite(forecast.hi)?"溫度待更新":`全天 ${Math.round(forecast.lo)}–${Math.round(forecast.hi)}°C`;
+        const rain=!Number.isFinite(forecast.rain)?"降雨待更新":`最高降雨 ${Math.round(forecast.rain)}%`;
         weather=`<span class="weather-icon" aria-hidden="true">${icon}</span><span class="weather-condition">${esc(label)}</span><strong>${esc(temp)}</strong><small>${esc(rain)}</small>`;
       }else weather=`<span class="weather-pending">${weatherState.loading?"讀取中":"預報待更新"}</span>`;
-      return `<div class="weather-spot"><span class="weather-place">${esc(loc.name)}</span><div class="weather-values">${weather}</div></div>`;
+      const periods=date>=today&&date<=horizon?renderWeatherPeriods(forecast):"";
+      return `<div class="weather-spot"><div class="weather-spot-head"><span class="weather-place">${esc(loc.name)}</span><div class="weather-values">${weather}</div></div>${periods}</div>`;
     }).join("");
     return `<article class="weather-day"><div class="weather-day-head"><span>DAY ${String(item.day).padStart(2,"0")}</span><strong>${esc(day.label)}</strong><small>${esc(day.route)}</small></div><div class="weather-spots">${spots}</div></article>`;
   }).join("");
@@ -235,8 +283,8 @@ async function loadWeather(force=false){
   if(shiftDate(today,15)<first||today>last){renderWeather();return;}
   if(!force){
     try{
-      const saved=JSON.parse(localStorage.getItem("hokkaido-weather-v1")||"null");
-      if(saved?.records && Date.now()-saved.updatedAt<30*60*1000){
+      const saved=JSON.parse(localStorage.getItem(weatherCacheKey)||"null");
+      if(saved?.records && saved.forecastDate===today && Date.now()-saved.updatedAt<30*60*1000){
         weatherState.records=saved.records;weatherState.updatedAt=saved.updatedAt;weatherState.error=null;
         renderWeather();return;
       }
@@ -248,6 +296,7 @@ async function loadWeather(force=false){
   url.searchParams.set("latitude",locations.map(x=>x.lat).join(","));
   url.searchParams.set("longitude",locations.map(x=>x.lon).join(","));
   url.searchParams.set("daily","weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max");
+  url.searchParams.set("hourly","weather_code,temperature_2m,apparent_temperature,precipitation_probability,is_day");
   url.searchParams.set("timezone","Asia/Tokyo");
   url.searchParams.set("forecast_days","16");
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
@@ -255,18 +304,9 @@ async function loadWeather(force=false){
     const response=await fetch(url,{signal:controller.signal});
     if(!response.ok)throw new Error("預報服務回應失敗");
     const result=await response.json(),items=Array.isArray(result)?result:[result];
-    if(items.length!==locations.length)throw new Error("地點資料不完整");
-    const records={};
-    items.forEach((item,index)=>{
-      records[locations[index].id]={};
-      item.daily.time.forEach((date,i)=>{
-        records[locations[index].id][date]={code:item.daily.weather_code[i],
-          hi:item.daily.temperature_2m_max[i],lo:item.daily.temperature_2m_min[i],
-          rain:item.daily.precipitation_probability_max[i]};
-      });
-    });
+    const records=parseWeatherRecords(items,locations);
     weatherState.records=records;weatherState.updatedAt=Date.now();
-    try{localStorage.setItem("hokkaido-weather-v1",JSON.stringify({records,updatedAt:weatherState.updatedAt}));}catch{}
+    try{localStorage.setItem(weatherCacheKey,JSON.stringify({records,updatedAt:weatherState.updatedAt,forecastDate:today}));}catch{}
   }catch(error){weatherState.error=error.name==="AbortError"?"連線逾時":"請確認網路連線";}
   finally{clearTimeout(timer);weatherState.loading=false;renderWeather();}
 }
