@@ -19,6 +19,7 @@
 - 行程和景點資訊在 `data.json`。調整日期、時間、備註或導航目的地後，提交到 `main`，GitHub Actions 會重新部署。
 - 若增加圖片，將檔案放進 `assets/photos/`，並更新 `data.json` 中對應景點的 `image.path`、來源與授權欄位。請確認公開使用權。
 - 改動後遞增 `sw.js` 的 `CACHE` 版本字串，讓已安裝的離線網站取得新版。
+- 修改程式或樣式時，同步更新 `index.html` 與 `sw.js` 的 `app.js`／`styles.css` 版本參數，避免瀏覽器混用新舊檔案。
 - 網站使用相對路徑，可在 GitHub Pages 的專案網址下運作。設計在 `styles.css`，互動邏輯在 `app.js`。
 
 ## 出發前需確認
