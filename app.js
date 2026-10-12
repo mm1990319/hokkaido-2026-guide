@@ -160,7 +160,7 @@ function renderItinerary(){
 }
 function renderMeals(){
   const names=['早餐','午餐','晚餐'];
-  $("#meal-table").innerHTML=`<div class="meal-table-wrap"><table class="meal-table"><caption class="sr-only">七天早餐、午餐與晚餐安排</caption><thead><tr><th scope="col">日期</th>${names.map(n=>`<th scope="col">${n}</th>`).join('')}</tr></thead><tbody>${state.data.meals.map(m=>`<tr><th scope="row"><span>D${m.day}</span><strong>${esc(state.data.days[m.day-1].label)}</strong><button type="button" class="text-button" data-meal-day="${m.day}">當日行程 →</button></th>${['breakfast','lunch','dinner'].map((key,i)=>{const meal=m[key];return `<td data-label="${names[i]}"><span class="meal-status ${meal.status==='住宿已含'?'included':''}">${esc(meal.status)}</span><h3>${esc(meal.label)}</h3><p>${esc(meal.note)}</p>${meal.placeIds.map(id=>{const place=state.data.places.find(p=>p.id===id);if(!place)return '';const q=navQueryFor(place);return `<div class="meal-actions"><button type="button" class="text-button" data-detail="${esc(id)}">查看解說 →</button>${q?`<a class="text-button primary-link" href="${esc(navigationUrl(q,m.day<=5?'driving':m.day===6?'walking':'transit'))}" target="_blank" rel="noopener noreferrer">導航 ↗</a>`:''}</div>`;}).join('')}</td>`;}).join('')}</tr><tr class="meal-extra"><td colspan="4">D${m.day} 備註 · ${esc(m.extra)}</td></tr>`).join('')}</tbody></table></div>`;
+  $("#meal-table").innerHTML=`<div class="meal-table-wrap"><table class="meal-table"><caption class="sr-only">七天早餐、午餐與晚餐安排</caption><thead><tr><th scope="col">日期</th>${names.map(n=>`<th scope="col">${n}</th>`).join('')}</tr></thead><tbody>${state.data.meals.map(m=>`<tr><th scope="row"><span>D${m.day}</span><strong>${esc(state.data.days[m.day-1].label)}</strong><button type="button" class="text-button" data-meal-day="${m.day}">當日行程 →</button></th>${['breakfast','lunch','dinner'].map((key,i)=>{const meal=m[key];return `<td data-label="${names[i]}"><span class="meal-status ${meal.status==='住宿已含'?'included':''}">${esc(meal.status)}</span><h3>${esc(meal.label)}</h3><p>${esc(meal.note)}</p>${meal.placeIds.map(id=>{const place=state.data.places.find(p=>p.id===id);if(!place)return '';const q=navQueryFor(place);return `<div class="meal-actions"><button type="button" class="text-button" data-detail="${esc(id)}">查看解說 →</button>${q?`<a class="text-button primary-link" href="${esc(navigationUrl(q,modeForPlace(place)))}" target="_blank" rel="noopener noreferrer">導航 ↗</a>`:''}</div>`;}).join('')}</td>`;}).join('')}</tr><tr class="meal-extra"><td colspan="4">D${m.day} 備註 · ${esc(m.extra)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function groups(){
   return ["全部","已排程","備選","預排","未排程","收藏"];
@@ -462,6 +462,8 @@ async function init(){
     if(location.hash==="#meals")selectView("meals",false);
     if(location.hash==="#expenses")selectView("expenses",false);
     if("serviceWorker" in navigator && (location.protocol==="https:" || location.hostname==="localhost")){
+      const wasControlled=Boolean(navigator.serviceWorker.controller);let reloading=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{if(wasControlled&&!reloading){reloading=true;location.reload();}});
       navigator.serviceWorker.register("./sw.js").catch(()=>{});
     }
   }catch(error){

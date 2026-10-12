@@ -1,5 +1,5 @@
-const CACHE = "hokkaido-guide-2026-10-06-v7";
-const CORE = ["./", "./index.html", "./styles.css?v=20261006-weather", "./app.js?v=20261006-weather", "./data.json",
+const CACHE = "hokkaido-guide-2026-10-13-v8";
+const CORE = ["./", "./index.html", "./styles.css?v=20261013-v8", "./ledger.js?v=20261013-v8", "./expenses.js?v=20261013-v8", "./app.js?v=20261013-v8", "./data.json",
               "./manifest.webmanifest", "./assets/icon.svg"];
 
 self.addEventListener("install", event => {
@@ -29,6 +29,22 @@ self.addEventListener("fetch", event => {
   if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
+    const url = new URL(request.url);
+    if (request.mode === "navigate" || url.pathname.endsWith("/data.json")) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      try {
+        const response = await fetch(request, {signal: controller.signal});
+        if (response.ok) {
+          await cache.put(request, response.clone());
+          return response;
+        }
+      } catch (_) {} finally { clearTimeout(timer); }
+      const saved = await cache.match(request);
+      if (saved) return saved;
+      if (request.mode === "navigate") return cache.match("./index.html");
+      throw new Error("offline data unavailable");
+    }
     const cached = await cache.match(request);
     if (cached) {
       fetch(request).then(response => {
