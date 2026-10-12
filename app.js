@@ -31,6 +31,7 @@ function pathFor(path){ return path ? "./"+path : ""; }
 function imgStyle(place){return place.image ? `style="background-image:url('${esc(pathFor(place.image.path))}')"` : "";}
 function imageBadge(image){return image?.representative?'<span class="photo-badge">區域參考照片</span>':"";}
 function isReturnFlight(place){return place.name==="北海道 to 台灣";}
+function modeForPlace(place){return place.day===5&&place.time>='18:00'?'walking':place.day<=5?'driving':place.day===6?'walking':'transit';}
 function timeRange(place){
   if(!place.time)return "時間未定";
   if(isReturnFlight(place))return `${place.time} 日本起飛${place.endTime?" → "+place.endTime+" 台灣抵達":""}`;
@@ -87,6 +88,7 @@ function selectView(view,scroll=true){
   $$(".nav-link").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
   $$(".view-section").forEach(s=>s.classList.toggle("hidden",s.dataset.section!==view));
   if(view==="explore")renderExplore();
+  if(view==="expenses")renderExpenses();
   if(view==="essentials"){renderEssentials();loadWeather();}
   if(scroll)$(`[data-section="${view}"]`).scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -116,7 +118,7 @@ function renderStop(place,index){
     : `<div class="stop-image placeholder" role="img" aria-label="此地點尚無已授權照片" data-glyph="${esc(glyph)}"><span class="image-index">${String(index+1).padStart(2,"0")}</span></div>`;
   const query=navQueryFor(place);
   const nav=query
-    ? `<a class="text-button primary-link" href="${esc(navigationUrl(query))}" target="_blank" rel="noopener noreferrer">開始導航 ↗</a>`
+    ? `<a class="text-button primary-link" href="${esc(navigationUrl(query,modeForPlace(place)))}" target="_blank" rel="noopener noreferrer">開始導航 ↗</a>`
     : place.privateNavKey?`<button type="button" class="text-button primary-link" data-detail="${esc(place.id)}">設定目的地 →</button>`
     : `<span class="text-button" aria-label="此項目尚無可確認的導航地點">地點待確認</span>`;
   const note=place.note?`<p class="stop-note">${esc(place.note)}</p>`:"";
@@ -140,7 +142,7 @@ function renderAside(){
   $("#next-card").innerHTML=next
     ? `<span class="aside-kicker">NEXT DESTINATION / 下一站</span><h4>${esc(next.name)}</h4>
        <p>${esc(next.summary)}</p><span class="small-meta">${esc(timeRange(next))} · ${esc(next.city||"北海道")}</span>
-       <a class="button button-primary" href="${esc(navigationUrl(navQueryFor(next)))}" target="_blank" rel="noopener noreferrer">導航到下一站 ↗</a>`
+       <a class="button button-primary" href="${esc(navigationUrl(navQueryFor(next),modeForPlace(next)))}" target="_blank" rel="noopener noreferrer">導航到下一站 ↗</a>`
     : `<span class="aside-kicker">ALL DONE</span><h4>今天的路，走完了。</h4><p>可以到景點總覽看看備選地點。</p>`;
   const alerts=state.data.alerts.filter(x=>x.day===state.day);
   $("#day-alerts").innerHTML=`<span class="aside-kicker">HEADS UP / 行前提醒</span><h4>別忘了這些</h4>`
@@ -153,6 +155,12 @@ function renderAside(){
 }
 function renderItinerary(){
   renderTabs();renderBanner();renderTimeline();renderAside();
+  const meal=state.data.meals?.find(m=>m.day===state.day);
+  if(meal)$("#daily-meals").innerHTML=['breakfast','lunch','dinner'].map((key,i)=>`<div><small>${['早餐','午餐','晚餐'][i]} · ${esc(meal[key].status)}</small><strong>${esc(meal[key].label)}</strong></div>`).join('')+'<button class="text-button" type="button" data-view="meals">查看三餐細節 →</button>';
+}
+function renderMeals(){
+  const names=['早餐','午餐','晚餐'];
+  $("#meal-table").innerHTML=`<div class="meal-table-wrap"><table class="meal-table"><caption class="sr-only">七天早餐、午餐與晚餐安排</caption><thead><tr><th scope="col">日期</th>${names.map(n=>`<th scope="col">${n}</th>`).join('')}</tr></thead><tbody>${state.data.meals.map(m=>`<tr><th scope="row"><span>D${m.day}</span><strong>${esc(state.data.days[m.day-1].label)}</strong><button type="button" class="text-button" data-meal-day="${m.day}">當日行程 →</button></th>${['breakfast','lunch','dinner'].map((key,i)=>{const meal=m[key];return `<td data-label="${names[i]}"><span class="meal-status ${meal.status==='住宿已含'?'included':''}">${esc(meal.status)}</span><h3>${esc(meal.label)}</h3><p>${esc(meal.note)}</p>${meal.placeIds.map(id=>{const place=state.data.places.find(p=>p.id===id);if(!place)return '';const q=navQueryFor(place);return `<div class="meal-actions"><button type="button" class="text-button" data-detail="${esc(id)}">查看解說 →</button>${q?`<a class="text-button primary-link" href="${esc(navigationUrl(q,m.day<=5?'driving':m.day===6?'walking':'transit'))}" target="_blank" rel="noopener noreferrer">導航 ↗</a>`:''}</div>`;}).join('')}</td>`;}).join('')}</tr><tr class="meal-extra"><td colspan="4">D${m.day} 備註 · ${esc(m.extra)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function groups(){
   return ["全部","已排程","備選","預排","未排程","收藏"];
@@ -377,10 +385,12 @@ function openDetail(id){
     ?`<div class="dialog-hero" role="img" aria-label="${esc(p.image.alt||p.name)}" ${imgStyle(p)}>${imageBadge(p.image)}</div>`
     :`<div class="dialog-hero" role="img" aria-label="此地點尚無已授權照片">${esc(glyphs[p.category]||"北")}</div>`;
   const query=navQueryFor(p);
-  const nav=query?`<a class="button button-primary" href="${esc(navigationUrl(query))}" target="_blank" rel="noopener noreferrer">Google Maps 導航 ↗</a>`:"";
+  const nav=query?`<a class="button button-primary" href="${esc(navigationUrl(query,modeForPlace(p)))}" target="_blank" rel="noopener noreferrer">Google Maps 導航 ↗</a>`:"";
   const alertTitle={"藻岩山展望台｜中腹駅":"藻岩山導航至中腹站","登別伊達時代村":"登別入園與演出銜接",
     "千歲還車":"還車地點須看確認單","迴轉壽司 Toriton Kita 8":"壽司用餐時段差兩小時",
-    "北海道 to 台灣":"回程請以日本時間報到"}[p.name];
+    "北海道 to 台灣":"回程請以日本時間報到","美瑛神社":"神社授與所 09:00 才開",
+    "大丸札幌店（寶可夢中心）":"寶可夢中心 20:00 閉店",
+    "飯店 Check in｜Granbell hotel Tanuki":"入住與晚餐時段重疊"}[p.name];
   const relatedAlert=state.data.alerts.find(a=>a.title===alertTitle);
   const warning=relatedAlert?`<div class="notice-inline"><strong>${esc(relatedAlert.title)}：</strong> ${esc(relatedAlert.text)} ${sourceLink(relatedAlert.url,"來源")}</div>`:"";
   const highlights=p.highlights.length?`<section class="dialog-section"><h3>值得看什麼</h3><ul>${p.highlights.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></section>`:"";
@@ -397,7 +407,7 @@ function openDetail(id){
     </div>
     ${privateNavForm(p)}
     ${highlights}${detailFacts(p)}${tips}
-    ${p.body?`<details class="note-disclosure"><summary>閱讀完整景點筆記</summary><div class="long-note">${notesHtml(p.body)}</div></details>`:""}
+    ${p.body?`<details class="note-disclosure"><summary>閱讀完整景點筆記</summary>${p.noteWarning?`<p class="notice-inline">${esc(p.noteWarning)}</p>`:''}<div class="long-note">${notesHtml(p.body)}</div></details>`:""}
     <section class="dialog-section"><h3>資料與來源</h3>
       <p class="source-line">Notion 行程與景點內頁整理於 ${esc(state.data.lastReviewed)}。時刻、票價及營業資訊可能改變。</p>
       <p class="source-line">${sourceLink(p.notion,"查看 Notion 原頁")}${p.official?" · "+sourceLink(p.official,"景點官網"):""}</p>
@@ -417,6 +427,7 @@ function onSubmit(e){
   toast("導航位置已儲存在這台裝置");
 }
 function onClick(e){
+  const mealDay=e.target.closest('[data-meal-day]');if(mealDay){selectDay(Number(mealDay.dataset.mealDay));selectView('itinerary');return;}
   const nav=e.target.closest("[data-view]");if(nav){selectView(nav.dataset.view);return;}
   const day=e.target.closest("[data-day]");if(day){selectDay(Number(day.dataset.day));return;}
   const refresh=e.target.closest("[data-weather-refresh]");if(refresh){loadWeather(true);return;}
@@ -440,7 +451,7 @@ async function init(){
     const match=state.data.days.find(d=>d.date===today);
     state.day=match?.day||1;
     state.mode=state.day<=5?"driving":state.day===6?"walking":"transit";
-    renderItinerary();renderExplore();renderEssentials();
+    renderItinerary();renderExplore();renderEssentials();renderMeals();initLedger();
     document.addEventListener("click",onClick);
     document.addEventListener("submit",onSubmit);
     $("#search").addEventListener("input",e=>{state.search=e.target.value;renderExplore();});
@@ -448,6 +459,8 @@ async function init(){
     $("#place-dialog").addEventListener("click",e=>{if(e.target===$("#place-dialog"))$("#place-dialog").close();});
     if(location.hash==="#explore")selectView("explore",false);
     if(location.hash==="#essentials")selectView("essentials",false);
+    if(location.hash==="#meals")selectView("meals",false);
+    if(location.hash==="#expenses")selectView("expenses",false);
     if("serviceWorker" in navigator && (location.protocol==="https:" || location.hostname==="localhost")){
       navigator.serviceWorker.register("./sw.js").catch(()=>{});
     }

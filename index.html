@@ -20,6 +20,8 @@
       </a>
       <nav class="main-nav" aria-label="主要導覽">
         <button class="nav-link active" data-view="itinerary" type="button">每日行程</button>
+        <button class="nav-link" data-view="meals" type="button">餐食計畫</button>
+        <button class="nav-link" data-view="expenses" type="button">旅費帳本</button>
         <button class="nav-link" data-view="explore" type="button">景點總覽</button>
         <button class="nav-link" data-view="essentials" type="button">旅途資訊</button>
       </nav>
@@ -44,9 +46,9 @@
 
     <div class="intro-strip" aria-label="旅程摘要">
       <div><strong>07</strong><span>旅行日數</span></div>
-      <div><strong>55</strong><span>已排定行程</span></div>
-      <div><strong>04</strong><span>住宿地點</span></div>
-      <div class="intro-note"><span class="signal-dot"></span><span>景點日本時間・航班分別標示<br><small>資料整理：2026.10.04</small></span></div>
+      <div><strong>58</strong><span>已排定行程</span></div>
+      <div><strong>05</strong><span>住宿地點</span></div>
+      <div class="intro-note"><span class="signal-dot"></span><span>景點日本時間・航班分別標示<br><small>資料比對：2026.10.13</small></span></div>
     </div>
 
     <section class="view-section" id="journey" data-section="itinerary">
@@ -56,6 +58,7 @@
       </div>
       <div class="day-tabs" id="day-tabs" role="tablist" aria-label="選擇行程日期"></div>
       <div class="day-banner" id="day-banner"></div>
+      <div class="daily-meals" id="daily-meals" aria-label="本日三餐"></div>
       <div class="itinerary-grid">
         <div>
           <div class="toolbar">
@@ -69,6 +72,26 @@
           <div class="aside-card official-card" id="day-verified"></div>
         </aside>
       </div>
+    </section>
+
+    <section class="view-section hidden" data-section="meals">
+      <div class="section-heading"><div><span class="kicker">AT THE TABLE / 七日餐食</span><h2>三餐，先有個方向。</h2></div><p>區分已排店家、住宿已含與自理；選定店家不代表已完成訂位。</p></div>
+      <div class="notice-inline">以下皆為日本時間。甜點行程不自動當成正餐，未確認店家與機上供餐均有標示。</div>
+      <div id="meal-table"></div>
+    </section>
+
+    <section class="view-section hidden" data-section="expenses">
+      <div class="section-heading"><div><span class="kicker">TRAVEL LEDGER / 旅費帳本</span><h2>花多少，誰先付。</h2></div><p>預算與已付款分開看；結算只計已付款，金額以台幣計算。</p></div>
+      <div class="ledger-notice"><strong>記帳保存在這台裝置</strong><p>付款勾選、實付金額與轉帳紀錄不會寫回 Notion，也不會自動同步給旅伴。換裝置前請匯出備份；匯入會取代目前這台裝置的帳本。</p></div>
+      <div class="ledger-tools"><label>¥1 換算台幣 <input id="expense-rate" type="number" min="0.001" max="10" step="0.001" aria-label="每一日圓換算台幣匯率"></label><button type="button" class="button button-outline" data-ledger-export>匯出帳本</button><label class="button button-outline import-label">匯入帳本<input id="ledger-import" type="file" accept="application/json,.json"></label></div>
+      <p class="panel-foot" id="expense-method"></p>
+      <div class="expense-summary" id="expense-summary" aria-live="polite"></div>
+      <div class="expense-graphs"><section class="info-panel"><span class="panel-number">BUDGET / 類別分布</span><h3>預算花在哪裡</h3><div id="expense-category-chart"></div></section><section class="info-panel"><span class="panel-number">BY DAY / 逐日預算</span><h3>哪一天花得多</h3><div id="expense-day-chart"></div></section></div>
+      <section class="settlement-panel" aria-labelledby="settlement-title"><span class="kicker">SETTLEMENT / 代墊結算</span><h3 id="settlement-title">目前誰要給誰？</h3><div id="settlement-result" aria-live="polite"></div><form id="transfer-form" class="transfer-form"><label>已完成的轉帳方向<select name="from"><option value="Jacky">Jacky → 瑋瑋</option><option value="瑋瑋">瑋瑋 → Jacky</option></select></label><label>台幣金額<input type="number" name="amount" min="0.01" max="10000000" step="0.01" required placeholder="輸入已轉帳金額"></label><button class="button button-primary" type="submit">記錄已轉帳</button></form><div id="transfer-list"></div></section>
+      <details class="note-disclosure"><summary>尚未列入的花費與計算方式</summary><div id="expense-exclusions"></div></details>
+      <div class="ledger-list-heading"><h3>逐筆費用</h3><div class="filter-row" id="expense-filters"></div></div>
+      <div id="expense-list"></div>
+      <form id="add-expense-form" class="add-expense-form"><h3>補上一筆費用</h3><p>金額填兩人合計；個人消費可在新增後把分攤比例改為 100% 或 0%。</p><div class="add-fields"><label>項目<input name="name" required maxlength="80" placeholder="機票、停車、住宿稅…"></label><label>分類<select name="category"><option>交通</option><option>飲食</option><option>住宿</option><option>購物</option><option>其他</option></select></label><label>日期<select name="day" id="add-expense-day"></select></label><label>幣別<select name="currency"><option value="TWD">台幣</option><option value="JPY">日圓</option></select></label><label>兩人合計預算<input name="amount" required type="number" min="0.01" max="10000000" step="0.01"></label></div><button class="button button-primary" type="submit">新增費用</button></form>
     </section>
 
     <section class="view-section hidden" data-section="explore">
@@ -122,6 +145,8 @@
     <div id="dialog-content"></div>
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="ledger.js" defer></script>
+  <script src="expenses.js" defer></script>
   <script src="app.js?v=20261006-weather" defer></script>
 </body>
 </html>
