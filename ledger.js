@@ -27,7 +27,7 @@ const TravelLedger = (() => {
   function calculate(rows,rate,transfers=[]) {
     if(!Number.isFinite(rate)||rate<=0||rate>10)throw Error('匯率須大於 0 且不超過 10');
     let budget=0,paid=0,remaining=0,paidJacky=0,paidWei=0,owedJacky=0,budgetJacky=0,unassigned=0;
-    const categories={},days={};
+    const categories={},days={},dayCategories={};
     const items=rows.map(row=>{
       const j=cents(row.paidJacky||0),w=cents(row.paidWei||0),u=cents(row.unassignedPaid||0);
       const actual=j+w+u;
@@ -38,12 +38,19 @@ const TravelLedger = (() => {
       const jBudget=Math.round(total*row.shareJacky/100);
       budget+=total;paid+=actual;remaining+=balance;paidJacky+=j;paidWei+=w;owedJacky+=jShare;budgetJacky+=jBudget;unassigned+=u;
       categories[row.category||'其他']=(categories[row.category||'其他']||0)+total;
-      days[row.day]=(days[row.day]||0)+total;
-      return {...row,estimate,total,actual,remaining:balance,jShare,wShare:actual-jShare};
+      const allocationDays=row.allocationDays||[row.day];
+      if(!Array.isArray(allocationDays)||!allocationDays.length||new Set(allocationDays).size!==allocationDays.length||allocationDays.some(day=>!Number.isInteger(day)||day<1||day>7))throw Error('費用分配日期不正確');
+      const allocations=allocationDays.map((day,index)=>({day,amount:Math.floor(total/allocationDays.length)+(index<total%allocationDays.length?1:0)}));
+      for(const allocation of allocations){
+        days[allocation.day]=(days[allocation.day]||0)+allocation.amount;
+        const byCategory=dayCategories[allocation.day]||={};
+        byCategory[row.category||'其他']=(byCategory[row.category||'其他']||0)+allocation.amount;
+      }
+      return {...row,estimate,total,actual,remaining:balance,jShare,wShare:actual-jShare,allocations};
     });
     let netJacky=paidJacky-owedJacky;
     for(const transfer of transfers) netJacky+=cents(transfer.amount)*(transfer.from==='Jacky'?1:-1);
-    return {items,budget,paid,remaining,paidJacky,paidWei,budgetJacky,budgetWei:budget-budgetJacky,netJacky,unassigned,categories,days};
+    return {items,budget,paid,remaining,paidJacky,paidWei,budgetJacky,budgetWei:budget-budgetJacky,netJacky,unassigned,categories,days,dayCategories};
   }
   function validateBook(value) {
     if(!value||value.version!==1||!Number.isFinite(value.rate)||value.rate<=0||value.rate>10)throw Error('不是有效的北海道帳本備份');

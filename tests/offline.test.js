@@ -18,7 +18,7 @@ const context={URL,Response,AbortController,setTimeout,clearTimeout,
 vm.runInNewContext(fs.readFileSync(require.resolve('../sw.js'),'utf8'),context);
 async function main(){
   let work;handlers.install({waitUntil:p=>work=p});await work;
-  for(const name of ['app','ledger','expenses'])assert([...saved.keys()].some(path=>path.includes(name+'.js?v=20261013-v8')));
+  for(const name of ['app','ledger','expenses'])assert([...saved.keys()].some(path=>path.includes(name+'.js?v=20261013-v9')));
   let result;
   const request={url:'https://example.com/guide/data.json',method:'GET',mode:'cors'};
   handlers.fetch({request,respondWith:p=>result=p});assert.equal(await (await result).text(),'latest');

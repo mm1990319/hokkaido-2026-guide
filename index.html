@@ -8,7 +8,7 @@
   <title>北海道・秋の七日間｜Jacky 的旅行指南</title>
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=20261013-v8">
+  <link rel="stylesheet" href="styles.css?v=20261013-v9">
 </head>
 <body>
   <a class="skip-link" href="#main">跳至主要內容</a>
@@ -81,17 +81,20 @@
     </section>
 
     <section class="view-section hidden" data-section="expenses">
-      <div class="section-heading"><div><span class="kicker">TRAVEL LEDGER / 旅費帳本</span><h2>花多少，誰先付。</h2></div><p>預算與已付款分開看；結算只計已付款，金額以台幣計算。</p></div>
-      <div class="ledger-notice"><strong>記帳保存在這台裝置</strong><p>付款勾選、實付金額與轉帳紀錄不會寫回 Notion，也不會自動同步給旅伴。換裝置前請匯出備份；匯入會取代目前這台裝置的帳本。</p></div>
-      <div class="ledger-tools"><label>¥1 換算台幣 <input id="expense-rate" type="number" min="0.001" max="10" step="0.001" aria-label="每一日圓換算台幣匯率"></label><button type="button" class="button button-outline" data-ledger-export>匯出帳本</button><label class="button button-outline import-label">匯入帳本<input id="ledger-import" type="file" accept="application/json,.json"></label></div>
+      <div class="section-heading"><div><span class="kicker">TRAVEL LEDGER / 旅費帳本</span><h2>花多少，誰先付。</h2></div><p>查看兩人旅費預算、各自代付明細與每日當地待付項目。</p></div>
+      <div class="ledger-notice"><strong id="expense-source-date"></strong><p>採 Notion 費用清單快照，另含你補充的保費與 HEP／ETC 預估；後續修改 Notion 後，需重新更新網站資料。</p></div>
+      <div class="ledger-tools"><label>¥1 換算台幣 <input id="expense-rate" type="number" min="0.001" max="10" step="0.001" aria-label="每一日圓換算台幣匯率"></label><p class="panel-foot">只調整未付日圓預算；已付款台幣維持實付金額。</p></div>
       <p class="panel-foot" id="expense-method"></p>
       <div class="expense-summary" id="expense-summary" aria-live="polite"></div>
-      <div class="expense-graphs"><section class="info-panel"><span class="panel-number">BUDGET / 類別分布</span><h3>預算花在哪裡</h3><div id="expense-category-chart"></div></section><section class="info-panel"><span class="panel-number">BY DAY / 逐日預算</span><h3>哪一天花得多</h3><div id="expense-day-chart"></div></section></div>
-      <section class="settlement-panel" aria-labelledby="settlement-title"><span class="kicker">SETTLEMENT / 代墊結算</span><h3 id="settlement-title">目前誰要給誰？</h3><div id="settlement-result" aria-live="polite"></div><form id="transfer-form" class="transfer-form"><label>已完成的轉帳方向<select name="from"><option value="Jacky">Jacky → 瑋瑋</option><option value="瑋瑋">瑋瑋 → Jacky</option></select></label><label>台幣金額<input type="number" name="amount" min="0.01" max="10000000" step="0.01" required placeholder="輸入已轉帳金額"></label><button class="button button-primary" type="submit">記錄已轉帳</button></form><div id="transfer-list"></div></section>
+      <div class="expense-graphs">
+        <section class="info-panel"><span class="panel-number">BUDGET / 類別分布</span><h3>預算花在哪裡</h3><p class="chart-scope">兩人合計 · 台幣 · 已付實額＋未付估算</p><div id="expense-category-chart"></div></section>
+        <section class="info-panel"><span class="panel-number">BY DAY / 逐日預算</span><h3>哪一天花得多</h3><p class="chart-scope">兩人合計 · 台幣 · 各類別堆疊</p><div id="expense-day-chart"></div><p class="panel-foot">依使用日分配；Granbell 兩晚各 NT$2,166 分到 D5、D6。租車、HEP／ETC 與行前保費列於 D1；D7 尚未列費用，不代表零花費。</p></section>
+      </div>
+      <section class="settlement-panel" aria-labelledby="settlement-title"><span class="kicker">SETTLEMENT / 代墊結算</span><h3 id="settlement-title">目前誰要給誰？</h3><div id="settlement-result" aria-live="polite"></div><div id="settlement-details" class="settlement-details"></div></section>
       <details class="note-disclosure"><summary>尚未列入的花費與計算方式</summary><div id="expense-exclusions"></div></details>
-      <div class="ledger-list-heading"><h3>逐筆費用</h3><div class="filter-row" id="expense-filters"></div></div>
-      <div id="expense-list"></div>
-      <form id="add-expense-form" class="add-expense-form"><h3>補上一筆費用</h3><p>金額填兩人合計；個人消費可在新增後把分攤比例改為 100% 或 0%。</p><div class="add-fields"><label>項目<input name="name" required maxlength="80" placeholder="機票、停車、住宿稅…"></label><label>分類<select name="category"><option>交通</option><option>飲食</option><option>住宿</option><option>購物</option><option>其他</option></select></label><label>日期<select name="day" id="add-expense-day"></select></label><label>幣別<select name="currency"><option value="TWD">台幣</option><option value="JPY">日圓</option></select></label><label>兩人合計預算<input name="amount" required type="number" min="0.01" max="10000000" step="0.01"></label></div><button class="button button-primary" type="submit">新增費用</button></form>
+      <div class="ledger-list-heading"><div><span class="kicker">DAILY SPENDING / 當地花費計畫</span><h3>每天還預計付哪些？</h3></div></div>
+      <p class="chart-scope">各項金額與每日小計皆為兩人合計；日圓旁附台幣試算。只列尚未付款項目，已付住宿另作提醒。</p>
+      <div id="expense-plan" class="expense-plan"></div>
     </section>
 
     <section class="view-section hidden" data-section="explore">
@@ -145,8 +148,8 @@
     <div id="dialog-content"></div>
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="ledger.js?v=20261013-v8" defer></script>
-  <script src="expenses.js?v=20261013-v8" defer></script>
-  <script src="app.js?v=20261013-v8" defer></script>
+  <script src="ledger.js?v=20261013-v9" defer></script>
+  <script src="expenses.js?v=20261013-v9" defer></script>
+  <script src="app.js?v=20261013-v9" defer></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
-const CACHE = "hokkaido-guide-2026-10-13-v8";
-const CORE = ["./", "./index.html", "./styles.css?v=20261013-v8", "./ledger.js?v=20261013-v8", "./expenses.js?v=20261013-v8", "./app.js?v=20261013-v8", "./data.json",
+const CACHE = "hokkaido-guide-2026-10-13-v9";
+const CORE = ["./", "./index.html", "./styles.css?v=20261013-v9", "./ledger.js?v=20261013-v9", "./expenses.js?v=20261013-v9", "./app.js?v=20261013-v9", "./data.json",
               "./manifest.webmanifest", "./assets/icon.svg"];
 
 self.addEventListener("install", event => {
