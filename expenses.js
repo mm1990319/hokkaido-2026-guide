@@ -10,7 +10,7 @@ function initLedger(){
   try{const saved=Number(localStorage.getItem(EXPENSE_RATE_KEY));if(saved>0&&saved<=10)expenseRate=saved;}catch{}
   $('#expense-method').textContent=state.data.expenseSettings.note;
   $('#expense-source-date').textContent=`Notion 費用資料更新：${state.data.expenseSettings.updatedAt.replaceAll('-','/')} · ${state.data.expenses.filter(item=>!item.sourceType).length} 筆 Notion＋${state.data.expenses.filter(item=>item.sourceType).length} 筆補充`;
-  $('#expense-exclusions').innerHTML=`<p>已列預算尚未包含：</p><ul>${state.data.expenseSettings.excluded.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p>共同費用兩人各半，未付預算不納入代墊。已付清項目採 Notion 實付台幣，保費採 Jacky 提供金額；未付採行程每人預估 × 2 或官方票價。HEP／ETC 為一車共用費用，S 級 X-bee／RAIZE 按普通車 5 天估算；實際依租車確認單與現場辦理。行前保費列於 D1，並非當日待付。Granbell 兩晚住宿平均分配到 D5、D6，付款只計一次。每日預算依使用日分配，不代表當天需要付款；下方另列當地待付項目。代墊差額尚未扣除兩人之間的轉帳。</p><p>${sourceLink(state.data.expenseSettings.source,'Notion 費用清單')}</p>`;
+  $('#expense-exclusions').innerHTML=`<p>已列預算尚未包含：</p><ul>${state.data.expenseSettings.excluded.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p>共同費用兩人各半，未付預算不納入代墊。已付清項目採 Notion 實付台幣，保費採 Jacky 提供金額；未付採行程每人預估 × 2 或官方票價。HEP／ETC 為一車共用費用，S 級 X-bee／RAIZE 按普通車 5 天估算；實際依租車確認單與現場辦理。租車、HEP 與 ETC 卡在逐日圖平均分到 D1～D5；付款明細和 D1 現場待付保留整筆。行前保費列於 D1，並非當日待付。Granbell 兩晚住宿平均分配到 D5、D6，付款只計一次。每日預算依使用日分配，不代表當天需要付款；下方另列當地待付項目。代墊差額尚未扣除兩人之間的轉帳。</p><p>${sourceLink(state.data.expenseSettings.source,'Notion 費用清單')}</p>`;
   $('#expense-rate').addEventListener('change',event=>{
     const input=event.target,rate=Number(input.value);
     if(!input.checkValidity()||rate<=0||rate>10){toast('請輸入有效匯率');input.value=expenseRate;return;}
@@ -41,7 +41,7 @@ function expenseDayChart(c,categories){
 function expensePayerDetails(c,payer){
   const field=payer==='Jacky'?'paidJacky':'paidWei',total=payer==='Jacky'?c.paidJacky:c.paidWei;
   const items=c.items.filter(item=>item[field]>0);
-  return `<section class="payer-details"><div class="payer-details-heading"><h4>${esc(payer)} 先付</h4><strong>${twd(total)}</strong></div><p>個人代付總額 · ${items.length} 筆</p><ul>${items.map(item=>`<li><div><span>${expenseDot(item.category)}${esc(item.name)}</span><small>${item.allocationDays?`D${item.allocationDays.join('、D')} · 兩晚合計，僅計一次`:`D${item.day}`} · ${item.source?sourceLink(item.source,'核對來源'):'Jacky 提供 · 已付款確認'}</small>${item.displayNote?`<small>${esc(item.displayNote)}</small>`:''}</div><strong>${twd(TravelLedger.cents(item[field]))}</strong></li>`).join('')}</ul></section>`;
+  return `<section class="payer-details"><div class="payer-details-heading"><h4>${esc(payer)} 先付</h4><strong>${twd(total)}</strong></div><p>個人代付總額 · ${items.length} 筆</p><ul>${items.map(item=>`<li><div><span>${expenseDot(item.category)}${esc(item.name)}</span><small>${item.allocationDays?`D${item.allocationDays.join('、D')} · ${item.allocationDays.length}${item.category==='住宿'?'晚':'天'}合計，僅計一次`:`D${item.day}`} · ${item.source?sourceLink(item.source,'核對來源'):'Jacky 提供 · 已付款確認'}</small>${item.displayNote?`<small>${esc(item.displayNote)}</small>`:''}</div><strong>${twd(TravelLedger.cents(item[field]))}</strong></li>`).join('')}</ul></section>`;
 }
 function renderExpensePlan(c){
   const today=localToday();

@@ -18,11 +18,11 @@ const context={URL,Response,AbortController,setTimeout,clearTimeout,
 vm.runInNewContext(fs.readFileSync(require.resolve('../sw.js'),'utf8'),context);
 async function main(){
   let work;handlers.install({waitUntil:p=>work=p});await work;
-  for(const name of ['app','ledger','expenses'])assert([...saved.keys()].some(path=>path.includes(name+'.js?v=20261013-v10')));
-  assert([...saved.keys()].includes('./data.json?v=20261013-v10'));
-  assert(fs.readFileSync(require.resolve('../app.js'),'utf8').includes('fetch("./data.json?v=20261013-v10")'));
+  for(const name of ['app','ledger','expenses'])assert([...saved.keys()].some(path=>path.includes(name+'.js?v=20261013-v11')));
+  assert([...saved.keys()].includes('./data.json?v=20261013-v11'));
+  assert(fs.readFileSync(require.resolve('../app.js'),'utf8').includes('fetch("./data.json?v=20261013-v11")'));
   let result;
-  const request={url:'https://example.com/guide/data.json?v=20261013-v10',method:'GET',mode:'cors'};
+  const request={url:'https://example.com/guide/data.json?v=20261013-v11',method:'GET',mode:'cors'};
   handlers.fetch({request,respondWith:p=>result=p});assert.equal(await (await result).text(),'latest');
   online=false;
   handlers.fetch({request,respondWith:p=>result=p});assert.equal(await (await result).text(),'latest');

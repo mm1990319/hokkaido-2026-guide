@@ -55,7 +55,15 @@ assert.equal(result.budget,4980700);
 assert.equal(result.remaining,1934000);
 assert.equal(result.items.find(item=>item.id==='hep-5days-20261013').amount,9600);
 assert.equal(result.items.find(item=>item.id==='etc-card-20261013').amount,1100);
-assert.equal(result.days[1],1521200);
+// Spread the shared car/pass/card across five days without changing payments.
+for(const id of ['2a5ff866afef816cae65c907f8afdd8c','hep-5days-20261013','etc-card-20261013']){
+ const item=result.items.find(item=>item.id===id);
+ assert.deepEqual(item.allocations.map(a=>a.day),[1,2,3,4,5]);
+ assert.equal(item.allocations.reduce((sum,a)=>sum+a.amount,0),item.total);
+ assert.equal(result.items.filter(row=>row.id===id).length,1);
+}
+for(let day=1;day<=5;day++)assert.equal(result.dayCategories[day]['交通'],183480+(day===5?80000:0));
+assert.equal(result.days[1],787280);
 
 // Two-night lodging is split only for daily charts; payment remains one record.
 const granbell=result.items.find(item=>item.id==='3cfff866afef801e82abc94c9222344d');
