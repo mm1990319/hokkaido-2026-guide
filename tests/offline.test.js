@@ -5,7 +5,7 @@ const handlers={},saved=new Map();
 const key=request=>typeof request==='string'?request:request.url.replace('https://example.com/guide/','./');
 let online=true;
 const cache={
-  async addAll(paths){for(const path of paths)saved.set(path,new Response(path.endsWith('data.json')?JSON.stringify({places:[]}):'cached '+path));},
+  async addAll(paths){for(const path of paths)saved.set(path,new Response(path.split('?')[0].endsWith('data.json')?JSON.stringify({places:[]}):'cached '+path));},
   async add(path){saved.set(path,new Response('image'));},
   async match(request){return saved.get(key(request))?.clone();},
   async put(request,response){saved.set(key(request),response.clone());}
@@ -18,9 +18,11 @@ const context={URL,Response,AbortController,setTimeout,clearTimeout,
 vm.runInNewContext(fs.readFileSync(require.resolve('../sw.js'),'utf8'),context);
 async function main(){
   let work;handlers.install({waitUntil:p=>work=p});await work;
-  for(const name of ['app','ledger','expenses'])assert([...saved.keys()].some(path=>path.includes(name+'.js?v=20261013-v9')));
+  for(const name of ['app','ledger','expenses'])assert([...saved.keys()].some(path=>path.includes(name+'.js?v=20261013-v10')));
+  assert([...saved.keys()].includes('./data.json?v=20261013-v10'));
+  assert(fs.readFileSync(require.resolve('../app.js'),'utf8').includes('fetch("./data.json?v=20261013-v10")'));
   let result;
-  const request={url:'https://example.com/guide/data.json',method:'GET',mode:'cors'};
+  const request={url:'https://example.com/guide/data.json?v=20261013-v10',method:'GET',mode:'cors'};
   handlers.fetch({request,respondWith:p=>result=p});assert.equal(await (await result).text(),'latest');
   online=false;
   handlers.fetch({request,respondWith:p=>result=p});assert.equal(await (await result).text(),'latest');

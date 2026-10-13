@@ -445,7 +445,7 @@ function onClick(e){
 }
 async function init(){
   try{
-    const response=await fetch("./data.json");if(!response.ok)throw new Error("資料載入失敗");
+    const response=await fetch("./data.json?v=20261013-v10");if(!response.ok)throw new Error("資料載入失敗");
     state.data=await response.json();
     const today=localToday();
     const match=state.data.days.find(d=>d.date===today);
