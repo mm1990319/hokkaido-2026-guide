@@ -130,7 +130,7 @@ function renderStop(place,index){
         <h4 class="stop-title">${esc(place.name)}</h4>${place.localName?`<p class="stop-local">${esc(place.localName)}</p>`:""}
         <p class="stop-summary">${esc(place.summary)}</p>${note}</div></div>
       <div class="stop-actions">${nav}<span class="divider"></span>
-        <button type="button" class="text-button" data-detail="${esc(place.id)}">閱讀解說 →</button></div></div></article>`;
+        <button type="button" class="text-button" data-detail="${esc(place.id)}">閱讀解說 →</button>${place.officialLabel?sourceLink(place.official,place.officialLabel):''}</div></div></article>`;
 }
 function renderTimeline(){
   const places=dayPlaces(state.day);
@@ -410,7 +410,7 @@ function openDetail(id){
     ${p.body?`<details class="note-disclosure"><summary>閱讀完整景點筆記</summary>${p.noteWarning?`<p class="notice-inline">${esc(p.noteWarning)}</p>`:''}<div class="long-note">${notesHtml(p.body)}</div></details>`:""}
     <section class="dialog-section"><h3>資料與來源</h3>
       <p class="source-line">Notion 行程與景點內頁整理於 ${esc(p.reviewedAt||state.data.lastReviewed)}。時刻、票價及營業資訊可能改變。</p>
-      <p class="source-line">${sourceLink(p.notion,"查看 Notion 原頁")}${p.official?" · "+sourceLink(p.official,"景點官網"):""}</p>
+      <p class="source-line">${sourceLink(p.notion,"查看 Notion 原頁")}${p.official?" · "+sourceLink(p.official,p.officialLabel||"景點官網"):""}</p>
       ${photoCredit(p.image)}</section></div>`;
   $("#place-dialog").showModal();
 }
@@ -445,7 +445,7 @@ function onClick(e){
 }
 async function init(){
   try{
-    const response=await fetch("./data.json?v=20261015-v12");if(!response.ok)throw new Error("資料載入失敗");
+    const response=await fetch("./data.json?v=20261015-v13");if(!response.ok)throw new Error("資料載入失敗");
     state.data=await response.json();
     const today=localToday();
     const match=state.data.days.find(d=>d.date===today);

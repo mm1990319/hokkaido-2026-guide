@@ -1,5 +1,5 @@
-const CACHE = "hokkaido-guide-2026-10-15-v12";
-const CORE = ["./", "./index.html", "./styles.css?v=20261015-v12", "./ledger.js?v=20261015-v12", "./expenses.js?v=20261015-v12", "./app.js?v=20261015-v12", "./data.json?v=20261015-v12",
+const CACHE = "hokkaido-guide-2026-10-15-v13";
+const CORE = ["./", "./index.html", "./styles.css?v=20261015-v13", "./ledger.js?v=20261015-v13", "./expenses.js?v=20261015-v13", "./app.js?v=20261015-v13", "./data.json?v=20261015-v13",
               "./manifest.webmanifest", "./assets/icon.svg"];
 
 self.addEventListener("install", event => {
@@ -7,7 +7,7 @@ self.addEventListener("install", event => {
     const cache = await caches.open(CACHE);
     await cache.addAll(CORE);
     try {
-      const response = await cache.match("./data.json?v=20261015-v12");
+      const response = await cache.match("./data.json?v=20261015-v13");
       const data = await response.json();
       const images = [...new Set(data.places.map(p => p.image?.path).filter(Boolean))];
       await Promise.allSettled(images.map(path => cache.add("./" + path)));
